@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/admin/admin_dashboard_screen.dart';
+import '../../features/admin/admin_report_detail_screen.dart';
 import '../../features/landing_page/landing.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/sign_up_screen.dart';
@@ -11,15 +13,18 @@ import '../../features/report/repair_report_screen.dart';
 import '../../features/repair/assigned_repair_screen.dart';
 import '../../features/repair/repair_screen.dart';
 import '../../features/splash/splash_screen.dart';
+import '../../models/admin_report.dart';
 import '../../shared/scaffold/main_shell.dart';
 
 /// Navigation map:
 ///   /landing                -> first screen (welcome page)
 ///   /login                  -> authentication screen
 ///   /signup                 -> account creation screen
-///   /home                   -> main application screen
+///   /home                   -> main application screen (technicien)
 ///   /home, /notifications, /profile -> bottom-nav shell
 ///   /assigned-repair, /repair, /repair-report -> focused full-screen tasks
+///   /admin                   -> admin dashboard (admin accounts only)
+///   /admin/report            -> single report detail (pass AdminReport via `extra`)
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/landing',
@@ -101,6 +106,17 @@ final GoRouter appRouter = GoRouter(
     GoRoute(
       path: '/repair-report',
       builder: (context, state) => const RepairReportScreen(),
+    ),
+
+    // Admin-only screens
+    GoRoute(
+      path: '/admin',
+      builder: (context, state) => const AdminDashboardScreen(),
+    ),
+
+    GoRoute(
+      path: '/admin/report',
+      builder: (context, state) => AdminReportDetailScreen(report: state.extra as AdminReport),
     ),
   ],
 );

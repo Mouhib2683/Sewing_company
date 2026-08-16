@@ -14,8 +14,8 @@ class LoginScreen extends ConsumerStatefulWidget {
 
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController(text: 'ali.bensalah@factory.local');
-  final _passwordController = TextEditingController(text: 'password');
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _obscure = true;
   bool _isSubmitting = false;
 
@@ -39,7 +39,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      context.go('/home');
+      final isAdmin = ref.read(authProvider).isAdmin;
+      context.go(isAdmin ? '/admin' : '/home');
+    } else {
+      final message = ref.read(authProvider).errorMessage ?? 'Login failed';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -139,13 +143,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ],
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Center(
-                  child: Text(
-                    'Demo build — any credentials will sign you in.',
-                    style: TextStyle(color: AppColors.textDisabled, fontSize: 12),
                   ),
                 ),
               ],

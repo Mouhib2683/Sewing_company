@@ -3,7 +3,9 @@ import '../models/assigned_repair.dart';
 import '../models/repair_history_entry.dart';
 import '../models/repair_report.dart';
 import '../models/technician.dart';
+import '../services/reports_api.dart';
 import 'assigned_repair_provider.dart';
+import 'auth_provider.dart';
 import 'notifications_provider.dart';
 import 'repair_history_provider.dart';
 import 'technician_provider.dart';
@@ -39,11 +41,17 @@ class RepairWorkflowController {
     _ref.read(technicianProvider.notifier).setStatus(TechnicianStatus.repairing);
   }
 
-  /// Submits the mandatory report, logs it to today's history, releases the
-  /// technician back to available, and clears the active assignment.
-  /// Returns the constructed report — shaped exactly like what a real
-  /// `POST /incidents/:id/report` call would send/receive later.
-  RepairReport? submitReport({required String problemDescription, required String solutionApplied, String? notes}) {
+  /// Submits the mandatory report to the backend (saved in the `reports`
+  /// table, visible on the admin dashboard), then logs it to today's local
+  /// history, releases the technician back to available, and clears the
+  /// active assignment. Throws [ApiException]/[Exception] if the save
+  /// fails — callers should catch and show that to the user rather than
+  /// treating the report as submitted.
+  Future<RepairReport?> submitReport({
+    required String problemDescription,
+    required String solutionApplied,
+    String? notes,
+  }) async {
     final repair = _ref.read(assignedRepairProvider);
     final technician = _ref.read(technicianProvider);
     if (repair == null || repair.repairStartedAt == null) return null;
@@ -61,6 +69,25 @@ class RepairWorkflowController {
       solutionApplied: solutionApplied,
       notes: notes,
     );
+
+    final token = _ref.read(authProvider).accessToken;
+    if (token == null) {
+      throw Exception('You need to be logged in to submit a report.');
+    }
+
+    // Persist first — if this throws, nothing local changes, and the
+    // technician can safely retry the submission.
+    await _ref.read(reportsApiProvider).submitReport(
+          token: token,
+          machineCode: report.machineCode,
+          failureType: report.failureType,
+          acceptedAt: report.acceptedAt,
+          repairStartedAt: report.repairStartedAt,
+          repairEndedAt: report.repairEndedAt,
+          problemDescription: report.problemDescription,
+          solutionApplied: report.solutionApplied,
+          notes: report.notes,
+        );
 
     _ref.read(repairHistoryProvider.notifier).addEntry(
           RepairHistoryEntry(

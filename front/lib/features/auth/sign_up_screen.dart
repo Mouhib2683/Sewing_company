@@ -35,14 +35,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isSubmitting = true);
 
-    // NOTE: `signUp` doesn't exist on authProvider yet — add a method like
-    // this to your AuthNotifier, mirroring the shape of `login(...)`:
-    //
-    //   Future<bool> signUp({
-    //     required String name,
-    //     required String email,
-    //     required String password,
-    //   }) async { ... }
     final success = await ref.read(authProvider.notifier).signUp(
           name: _nameController.text.trim(),
           email: _emailController.text.trim(),
@@ -53,8 +45,28 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     setState(() => _isSubmitting = false);
 
     if (success) {
-      context.go('/home');
+      // Fresh sign-ups are always technicien accounts (see auth_provider),
+      // so this always lands on /home — but reads the real state rather
+      // than assuming, in case that ever changes.
+      final isAdmin = ref.read(authProvider).isAdmin;
+      context.go(isAdmin ? '/admin' : '/home');
+      return;
     }
+
+    final authState = ref.read(authProvider);
+    if (authState.needsEmailConfirmation) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created. Check your email to confirm it, then log in.'),
+        ),
+      );
+      context.go('/login');
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(authState.errorMessage ?? 'Sign up failed')),
+    );
   }
 
   @override

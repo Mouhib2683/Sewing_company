@@ -2,20 +2,22 @@ const authService = require("../services/auth.service");
 
 const signUp = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password } = req.body;
 
-    if (!email || !password) {
+    if (!name || !email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Email and password are required",
+        message: "Name, email and password are required",
       });
     }
 
-    const data = await authService.signUp(email, password);
+    const data = await authService.signUp(name, email, password);
 
     return res.status(201).json({
       success: true,
-      message: "Account created successfully",
+      message: data.session
+        ? "Account created successfully"
+        : "Account created. Please check your email to confirm before signing in.",
       data,
     });
   } catch (error) {

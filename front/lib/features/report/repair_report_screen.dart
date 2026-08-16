@@ -37,17 +37,24 @@ class _RepairReportScreenState extends ConsumerState<RepairReportScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 500)); // simulated submit latency
 
-    ref.read(repairWorkflowControllerProvider).submitReport(
-          problemDescription: _problemController.text.trim(),
-          solutionApplied: _solutionController.text.trim(),
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
-        );
+    try {
+      await ref.read(repairWorkflowControllerProvider).submitReport(
+            problemDescription: _problemController.text.trim(),
+            solutionApplied: _solutionController.text.trim(),
+            notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          );
 
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
-    _showSuccessDialog();
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      _showSuccessDialog();
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not save report: $error')),
+      );
+    }
   }
 
   void _showSuccessDialog() {
